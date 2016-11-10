@@ -119,6 +119,11 @@ function createDebug(namespace) {
   debug.useColors = exports.useColors();
   debug.color = selectColor();
 
+  // env-specific initialization logic for debug instances
+  if ('function' === typeof exports.init) {
+    exports.init(debug);
+  }
+
   return debug;
 }
 
