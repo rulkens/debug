@@ -29,6 +29,12 @@ exports.skips = [];
 exports.formatters = {};
 
 /**
+ * extended settings - per namespace configuration
+ */
+
+exports.settings = {};
+
+/**
  * Previously assigned color.
  */
 
@@ -47,8 +53,49 @@ var prevTime;
  * @api private
  */
 
-function selectColor() {
-  return exports.colors[prevColor++ % exports.colors.length];
+function selectColor(namespace) {
+
+  // return one of the pre-defined colors
+  return namespaceColor(namespace) || exports.colors[prevColor++ % exports.colors.length];
+}
+
+function namespaceMatch(namespace){
+  var settings = exports.settings;
+  var regex, match;
+  // check each item in settings object
+  if(settings){
+    for(var prop in settings){
+      if(settings.hasOwnProperty(prop)){
+        regex = new RegExp('^' + prop.replace(/\*/g, '.*?') + '$');
+        if(namespace.match(regex)) match = prop;
+      }
+    }
+  }
+  if(match){
+    return settings[match];
+  }
+}
+
+function namespaceColor (namespace){
+  var namespaceSettings;
+
+  if(namespaceSettings = namespaceMatch(namespace)){
+    if(namespaceSettings.hasOwnProperty('color')){
+      // @TODO: return a variation on that color
+      return namespaceSettings.color;
+    }
+  }
+}
+
+function namespaceLog (namespace){
+  var namespaceSettings;
+
+  if(namespaceSettings = namespaceMatch(namespace)){
+    if(namespaceSettings.hasOwnProperty('log')){
+      // @TODO: return a variation on that color
+      return namespaceSettings.log;
+    }
+  }
 }
 
 /**
@@ -81,7 +128,7 @@ function debug(namespace) {
 
     // add the `color` if not set
     if (null == self.useColors) self.useColors = exports.useColors();
-    if (null == self.color && self.useColors) self.color = selectColor();
+    if (null == self.color && self.useColors) self.color = selectColor(namespace);
 
     var args = new Array(arguments.length);
     for (var i = 0; i < args.length; i++) {
@@ -116,7 +163,7 @@ function debug(namespace) {
     // apply env-specific formatting
     args = exports.formatArgs.apply(self, args);
 
-    var logFn = enabled.log || exports.log || console.log.bind(console);
+    var logFn = namespaceLog(namespace) || enabled.log || exports.log || console.log.bind(console);
     logFn.apply(self, args);
   }
   enabled.enabled = true;
